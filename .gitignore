@@ -1,0 +1,23 @@
+# House state — never commit .skippy
+.skippy/
+
+# Android/Gradle build outputs (gradle cache dir is untracked)
+.gradle/
+
+# Nagatha audit/kit packets — never tracked
+.nagatha/
+# Bilby mill scratch — never tracked
+.bilby/
+# Mill-seeded venv is a house symlink or share dir — never tracked
+.venv
+# Mill COREPACK_HOME cache — never tracked
+.corepack/
+# Mill npm cache — never tracked
+.npm-cache/
+# Mill Go build cache — never tracked
+.gocache/
+
+# Android Gradle outputs — never tracked
+app/build/
+# Kotlin daemon / incremental — never tracked
+.kotlin/
