@@ -2,6 +2,23 @@
 
 GATE: `./gradlew :app:testDebugUnitTest --offline` then `./gradlew :app:assembleDebug --offline`
 
+CI is `.github/workflows/ci.yml` and is **phase-aware**. Today the repo has no
+Gradle, so only the docs lane runs (`scripts/check-docs.sh`: links, commit
+trailers, secrets, gate honesty). The build lane self-arms on `hashFiles('gradlew')`
+— the moment Phase 0 lands a wrapper, CI starts running tests, `assembleRelease`,
+lint, and the two audits that enforce what this design *claims*:
+
+- `scripts/check-permissions.sh` — AU11's "No INTERNET. Nothing leaves the
+  phone." against the **merged** release manifest, plus AU12 (xx-auto never
+  declares `category.NAVIGATION`).
+- `scripts/check-nogms.sh` — AU1/AU12's "the `noGms` build has no Google on
+  the classpath."
+
+Both are written already and exit 0 with a message until their inputs exist.
+Expect `check-permissions.sh` to fail on the first real `assembleRelease` and
+need one deliberate edit to its pinned list — that is the design working, not
+a bug. xx-note hit the same thing.
+
 Spec is [design.md](design.md). Locks AU1–AU14 are not reopened here.
 
 **AU1 was amended 2026-09-21** (projection reopened, see design.md header and

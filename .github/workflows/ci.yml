@@ -1,0 +1,85 @@
+# xx-auto CI — the gate grows with the repo.
+#
+# This repo was forged as a spec: design.md, todo.md and contracts/XX-MAPS.md,
+# with no Gradle scaffold until todo.md Phase 0 lands. A workflow that runs
+# ./gradlew today would be red on every push, and a gate everyone has learned
+# to ignore is worse than no gate at all — the estate already has a name for
+# that failure ("False greens", xx-apps/docs/DISPATCH-2026-09-20.md).
+#
+# So the gate is phase-aware:
+#
+#   docs lane    runs today, every push. Links, commit trailers, secrets, and
+#                a check that the build lane has not been gutted.
+#   build lane   dormant until `gradlew` exists, then runs the full house gate
+#                (tests, release assembly, lint) plus the two audits that
+#                enforce what design.md CLAIMS — no INTERNET (AU11) and no
+#                Google in the noGms flavor (AU1/AU12).
+#
+# The build lane self-arms on hashFiles('gradlew'), so it cannot stay dormant
+# by accident. scripts/check-docs.sh guards the other direction.
+#
+# Shape and pinned action SHAs follow xx-note, the most mature gate in the
+# suite; the audit-scripts-enforce-the-design idea is taken from it wholesale.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0   # check-docs.sh audits the whole commit history
+
+      - name: Determine phase
+        id: phase
+        run: |
+          if [ -f gradlew ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Build lane ARMED — gradlew present."
+          else
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Build lane DORMANT — spec-only repo, no gradlew yet."
+          fi
+
+      # ── Always ────────────────────────────────────────────────────────
+      - name: Docs, trailers, secrets, gate honesty
+        run: ./scripts/check-docs.sh
+
+      # ── From Phase 0 onward ───────────────────────────────────────────
+      - name: Validate gradle wrapper
+        if: steps.phase.outputs.build == 'true'
+        uses: gradle/actions/wrapper-validation@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
+
+      - name: Set up JDK 17 (temurin) with gradle caching
+        if: steps.phase.outputs.build == 'true'
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      # GitHub runners ship the Android SDK; no local.properties is written.
+      - name: Unit tests, release assembly, lint
+        if: steps.phase.outputs.build == 'true'
+        run: >
+          ./gradlew testDebugUnitTest :app:assembleRelease :app:lintDebug
+          --console=plain
+
+      - name: Audit merged-manifest permissions (AU11, AU12)
+        if: steps.phase.outputs.build == 'true'
+        run: ./scripts/check-permissions.sh
+
+      - name: Audit noGms purity (AU1, AU12)
+        if: steps.phase.outputs.build == 'true'
+        run: ./scripts/check-nogms.sh
