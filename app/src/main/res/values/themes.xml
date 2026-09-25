@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Phase 0: a single Ink, no-action-bar theme. The drive screen renders
+         its own Ink ground (design: "Big targets. Black ground. Nothing
+         else."); the theme just pins the window to Ink with no chrome. -->
+    <style name="Theme.XxAuto" parent="android:Theme.Material.NoActionBar" tools:targetApi="31">
+        <item name="android:windowBackground">@color/pxx_ink</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/pxx_ink</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>

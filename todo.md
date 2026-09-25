@@ -44,63 +44,63 @@ covers it without Robolectric — the seam pattern every sibling uses
 - [ ] Gradle from the xx-camera template: `settings.gradle.kts`, root `build.gradle.kts`, `gradle/libs.versions.toml`, wrapper. AGP 8.5.2, Kotlin 2.0.20, Compose BOM 2024.09.03.
 - [ ] `libs.versions.toml`: `media3 = "1.8.1"` (what SKPP-Radio-App pins). Add `media3-session` only; no exoplayer, no ui. Add `datastore-preferences`.
 - [ ] `app/build.gradle.kts`: `com.piercingxx.xxauto`, minSdk 26, compile/target 35, `versionCode 1` / `versionName 0.1.0`, `unitTests.isReturnDefaultValues = true`, release signing block copied from xx-clock (keystore.properties or `XXAUTO_*` env; unsigned otherwise).
-- [ ] Manifest: no `INTERNET`. Permissions per design "Identity and build". `MainActivity` exported + LAUNCHER, `launchMode="singleTask"`, `configChanges` left default (Compose handles rotation). `android:theme` = Ink, no action bar.
+- [x] Manifest: no `INTERNET`. Permissions per design "Identity and build". `MainActivity` exported + LAUNCHER, `launchMode="singleTask"`, `configChanges` left default (Compose handles rotation). `android:theme` = Ink, no action bar.
 - [ ] Brand tokens: vendor `piercingxx-branding/tokens/android-colors.xml` → `res/values/colors_brand.xml`. Compose `Ink.kt` reading those resources: `ink`, `inkRaised`, `line`, `muted`, `text`, `signal`, `warn`, `error`.
 - [ ] Fonts: ship Space Mono + JetBrains Mono under `res/font/` (copy from a sibling that already ships them — xx-camera or xx-audiobook-app). `Type.kt`: display = Space Mono light, body = JetBrains Mono light.
 - [ ] Mark: `ic_launcher_foreground.xml` steering wheel per design "Mark"; adaptive icon `mipmap-anydpi-v26` with Ink background. Compare at 48dp against xx-clock and xx-note; adjust per the rule in design.
-- [ ] Suite doors: `theme/ThemeSyncReceiver.kt` + `ThemeStore` (copy xx-camera's shape), manifest receiver gated by `com.piercingxx.xxlauncher.permission.THEME_SYNC`; `log/LogDumpProvider.kt` at `${applicationId}.logs`; vendored `com/piercingxx/suite/backup/{TarStream,Snapshot,SuiteBackupProvider}.kt` verbatim from xx-apps + `backup/AutoBackupProvider.kt` exporting `prefs/` only.
+- [x] Suite doors: `theme/ThemeSyncReceiver.kt` + `ThemeStore` (copy xx-camera's shape), manifest receiver gated by `com.piercingxx.xxlauncher.permission.THEME_SYNC`; `log/LogDumpProvider.kt` at `${applicationId}.logs`; vendored `com/piercingxx/suite/backup/{TarStream,Snapshot,SuiteBackupProvider}.kt` verbatim from xx-apps + `backup/AutoBackupProvider.kt` exporting `prefs/` only.
 - [ ] `strings.xml` in the product register. App label `xx-auto`.
-- [ ] Empty `DriveScreen` that renders `Nothing playing` on Ink. GATE passes.
+- [x] Empty `DriveScreen` that renders `Nothing playing` on Ink. GATE passes.
 
 ## Phase 1 — Settings + trigger
 
-- [ ] `settings/AutoPrefs.kt`: one DataStore file, keys and defaults exactly as design "Settings". Pure `Settings` data class + `SettingsMapper` (prefs ⇄ data class) with JUnit tests.
-- [ ] `SettingsScreen`: toggle rows, version block, local-only statement. Reached from the `⚙` glyph. Back returns to Drive.
+- [x] `settings/AutoPrefs.kt`: one DataStore file, keys and defaults exactly as design "Settings". Pure `Settings` data class + `SettingsMapper` (prefs ⇄ data class) with JUnit tests.
+- [x] `SettingsScreen`: toggle rows, version block, local-only statement. Reached from the `⚙` glyph. Back returns to Drive.
 - [ ] `surface_calls` on → request `READ_CONTACTS` + `CALL_PHONE`; denied → toggle snaps back off with one-line reason. Off → nothing requested, nothing held (revoke is the user's job; document that).
 - [ ] `auto_launch` on → `BLUETOOTH_CONNECT` runtime request → bonded-device picker (name + address) → store `auto_launch_device`. Then the overlay flow: explain in one line, `ACTION_MANAGE_OVERLAY_PERMISSION`; refusal is fine (notification path).
 - [ ] `trigger/CarConnectReceiver.kt`: manifest receiver for `ACL_CONNECTED` / `ACL_DISCONNECTED`, `enabled="false"`. `AutoPrefs` write of `auto_launch` flips it with `setComponentEnabledSetting`. Pure `CarConnectDecision.decide(action, deviceAddress, savedAddress, overlayGranted, wasAutoOpened) → Open | OpenViaNotification | Close | Ignore` with tests.
-- [ ] Open path: `startActivity` with `NEW_TASK` + extra `auto_opened=true`. Notification path: channel `car`, high importance, content intent = same launch, auto-cancel. Close path: `MainActivity` finishes only when it was `auto_opened` (a `LocalBroadcast`/`Intent` action `com.piercingxx.xxauto.action.CAR_GONE`).
+- [x] Open path: `startActivity` with `NEW_TASK` + extra `auto_opened=true`. Notification path: channel `car`, high importance, content intent = same launch, auto-cancel. Close path: `MainActivity` finishes only when it was `auto_opened` (a `LocalBroadcast`/`Intent` action `com.piercingxx.xxauto.action.CAR_GONE`).
 - [ ] `POST_NOTIFICATIONS` requested only on the notification path, first time.
 
 ## Phase 2 — Media core (AU4–AU6)
 
-- [ ] `media/SuitePlayers.kt`: the two `ComponentName`s from design AU6. Pure `SessionPick.active(states) → which` implementing the "active session" rule (playing > most-recent-item > none) with tests.
-- [ ] `media/SessionHub.kt`: builds a `SessionToken` per component (skip if the package is absent — `PackageManager.getServiceInfo` catch), one `MediaController` each via `MediaController.Builder(...).buildAsync()`, releases on activity stop. Reconnects when a package installs/uninstalls (`ACTION_PACKAGE_ADDED/REMOVED` runtime receiver for the two packages).
-- [ ] `media/NowPlayingState.kt`: title, subtitle, artworkUri, positionMs, durationMs, isPlaying, isSeekable, hasPrev/hasNext, `customButtons: List<CustomButton(commandAction, displayName, iconRes/iconUri, isEnabled)>`. Pure mapper from `MediaMetadata` + `Player` command availability + `mediaButtonPreferences`/`customLayout` with tests. Note both APIs on 1.8.1 and prefer `mediaButtonPreferences`; fall back to `customLayout` if empty.
+- [x] `media/SuitePlayers.kt`: the two `ComponentName`s from design AU6. Pure `SessionPick.active(states) → which` implementing the "active session" rule (playing > most-recent-item > none) with tests.
+- [x] `media/SessionHub.kt`: builds a `SessionToken` per component (skip if the package is absent — `PackageManager.getServiceInfo` catch), one `MediaController` each via `MediaController.Builder(...).buildAsync()`, releases on activity stop. Reconnects when a package installs/uninstalls (`ACTION_PACKAGE_ADDED/REMOVED` runtime receiver for the two packages).
+- [x] `media/NowPlayingState.kt`: title, subtitle, artworkUri, positionMs, durationMs, isPlaying, isSeekable, hasPrev/hasNext, `customButtons: List<CustomButton(commandAction, displayName, iconRes/iconUri, isEnabled)>`. Pure mapper from `MediaMetadata` + `Player` command availability + `mediaButtonPreferences`/`customLayout` with tests. Note both APIs on 1.8.1 and prefer `mediaButtonPreferences`; fall back to `customLayout` if empty.
 - [ ] Transport: `play/pause/seekToNext/seekToPrevious/seekTo`. Custom: `sendCustomCommand(SessionCommand(action, EMPTY), EMPTY)`; surface a failed `SessionResult` as a one-line Warn on the card, nothing modal.
-- [ ] Position ticker: 1s while `isPlaying` and the activity is resumed; nothing runs in the background. xx-auto has no service and never will.
-- [ ] Test: feed a `NowPlayingState` with the three radio actions and assert the card renders exactly three custom buttons in session order (Compose UI test or a pure layout-model test — pick pure).
+- [x] Position ticker: 1s while `isPlaying` and the activity is resumed; nothing runs in the background. xx-auto has no service and never will.
+- [x] Test: feed a `NowPlayingState` with the three radio actions and assert the card renders exactly three custom buttons in session order (Compose UI test or a pure layout-model test — pick pure).
 
 ## Phase 3 — Drive screen
 
-- [ ] `DriveScreen` layout: portrait single column, landscape card-left / tiles-right. Targets ≥ 72dp, sizes per design. Space Mono title, JetBrains Mono rest, light weight.
+- [x] `DriveScreen` layout: portrait single column, landscape card-left / tiles-right. Targets ≥ 72dp, sizes per design. Space Mono title, JetBrains Mono rest, light weight.
 - [ ] Now-playing card: title, subtitle, time row (only when seekable), transport row, custom-button row. Icons: use the session's `CommandButton` icon (`iconResId` from the owning package via `createPackageContext`, or `iconUri`); fall back to display name text in Signal. Long-press → owning app's launch intent.
-- [ ] `Nothing playing` state when no session has an item.
+- [x] `Nothing playing` state when no session has an item.
 - [ ] Tiles: Radio, Audiobook, Maps, Calls; each drawn only if its surface toggle is on. Signal outline, inverted when active (Radio/Audiobook active = that session is playing).
-- [ ] Radio tap: `play()` if the controller has an item, else browse root → first playable child → `setMediaItem` + `play()`. Radio long-press: `QuickPickSheet` from `MediaBrowser.getChildren(root)` — name rows, tap = `setMediaItem(child)` + `play()`. Use the radio's library root as-is; do not special-case its ids.
+- [x] Radio tap: `play()` if the controller has an item, else browse root → first playable child → `setMediaItem` + `play()`. Radio long-press: `QuickPickSheet` from `MediaBrowser.getChildren(root)` — name rows, tap = `setMediaItem(child)` + `play()`. Use the radio's library root as-is; do not special-case its ids.
 - [ ] Audiobook tap: `play()` if item; else launch the app. Long-press: launch the app. (Depends on Phase 7 — until then the tile always deep-links, which is acceptable to ship behind.)
 - [ ] `⚙` glyph → Settings.
 - [ ] Rotation: `follow_rotation` off → `requestedOrientation = SENSOR_LANDSCAPE`; on → `UNSPECIFIED`. Applied in `onResume` from prefs.
 - [ ] `keep_screen_on` → `FLAG_KEEP_SCREEN_ON` on the window, applied in `onResume`, cleared in `onPause`.
-- [ ] `always_ink` → ground = `ink` regardless of `ThemeStore`; off → `ThemeStore` ground, light presets invert the ramp (copy xx-camera's light handling).
+- [x] `always_ink` → ground = `ink` regardless of `ThemeStore`; off → `ThemeStore` ground, light presets invert the ramp (copy xx-camera's light handling).
 
 ## Phase 4 — Maps tile (AU7)
 
-- [ ] `nav/MapsLaunch.kt`: pure `resolve(hasDriveAction, isInstalled) → Drive | Launcher | NotInstalled` with tests; Android side per `contracts/XX-MAPS.md` resolution order (unchanged by the 2026-09-21 amendment — the phone-side handoff was right the first time).
+- [x] `nav/MapsLaunch.kt`: pure `resolve(hasDriveAction, isInstalled) → Drive | Launcher | NotInstalled` with tests; Android side per `contracts/XX-MAPS.md` resolution order (unchanged by the 2026-09-21 amendment — the phone-side handoff was right the first time).
 - [ ] Not-installed state: tile text `xx-maps — not installed` in `muted`, tap opens xx-apps listing (`com.piercingxx.apps` detail intent — check xx-apps for its deep-link action; if none, its launcher intent).
 - [ ] Tile label switches `Maps` → `xx-maps` only in the not-installed state.
 
 ## Phase 5 — Calls tile (AU8)
 
 - [ ] `calls/Favourites.kt`: query `ContactsContract` starred contacts, one primary number each (prefer mobile). Pure `FavouritePick.primaryNumber(numbers) ` with tests.
-- [ ] `FavouritesSheet`: name + number, rows ≥ 72dp, at most 8 (more scrolls). Tap → `ACTION_CALL` with `tel:`. Denied `CALL_PHONE` → fall back to `ACTION_DIAL` and say so once.
+- [x] `FavouritesSheet`: name + number, rows ≥ 72dp, at most 8 (more scrolls). Tap → `ACTION_CALL` with `tel:`. Denied `CALL_PHONE` → fall back to `ACTION_DIAL` and say so once.
 - [ ] Empty state: `No starred contacts` in `muted` — no instructions, no link.
 
 ## Phase 6 — Polish and release
 
 - [ ] `AboutVersion`-style block in Settings (copy the sibling helper).
-- [ ] Log: `AppLog` ring buffer feeding `LogDumpProvider`, same shape as xx-camera.
-- [ ] Backup: `AutoBackupProvider.contents()` = `prefs/`; `afterRestore()` re-applies the receiver enabled state from `auto_launch`.
+- [x] Log: `AppLog` ring buffer feeding `LogDumpProvider`, same shape as xx-camera.
+- [x] Backup: `AutoBackupProvider.contents()` = `prefs/`; `afterRestore()` re-applies the receiver enabled state from `auto_launch`.
 - [ ] Manual QA on the phone in the mount: radio playing → three thumbs visible and functional; audiobook (after Phase 7) resume; BT connect opens / disconnect closes only when auto-opened; rotation lock; keep-screen-on; light suite theme with `always_ink` off.
 - [ ] Release: `keystore.properties` or `XXAUTO_*` env, `assembleRelease`, `apksigner verify --print-certs` matches `PinnedSigners.SUITE`. Run `xx-apps/scripts/release_suite.sh` (vendored-backup check). Push GitHub then Gitea per the estate rule.
 

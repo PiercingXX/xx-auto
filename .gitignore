@@ -21,3 +21,14 @@
 app/build/
 # Kotlin daemon / incremental — never tracked
 .kotlin/
+
+# Machine-specific SDK path; every other suite repo ignores it.
+local.properties
+
+# Claude Code local state (agent worktrees) — never tracked
+.claude/
+
+# Release signing secrets — never tracked
+keystore.properties
+*.jks
+*.keystore

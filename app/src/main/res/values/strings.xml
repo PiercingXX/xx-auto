@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">xx-auto</string>
+
+    <!-- Drive screen -->
+    <string name="nothing_playing">Nothing playing</string>
+
+    <!-- Product register (shown in Settings) -->
+    <string name="local_only_statement">Free and ad-free. Collects no personal data. Nothing here leaves your device.</string>
+</resources>

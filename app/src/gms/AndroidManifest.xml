@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 9, AU12, `gms` flavor only. This manifest merges into the main one
+     for the opt-in `gms` build variant; the default `noGms` variant never sees
+     it, so the Google-free build carries no androidx.car.app at all. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- The Android Auto entry point. The host instantiates this
+             CarAppService from this declaration — a CarAppService is never
+             constructed by app code, so manifest registration IS the wiring.
+             Media category only (AU12): xx-auto renders a templated media
+             surface and hands navigation off to xx-maps; it never declares
+             category.NAVIGATION and never draws a map. -->
+        <service
+            android:name=".car.AutoCarAppService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.car.app.action.APP" />
+                <category android:name="androidx.car.app.category.MEDIA" />
+            </intent-filter>
+        </service>
+    </application>
+
+</manifest>

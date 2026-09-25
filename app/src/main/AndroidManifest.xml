@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- AU11: NO INTERNET. Nothing leaves the phone. -->
+    <!-- Auto-launch (AU2): pick a bonded Bluetooth device; the ACL_CONNECTED
+         receiver is enabled only when the auto_launch toggle is on. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- Auto-launch (AU2): the receiver holds a wake lock while it reads the
+         settings and launches, so the process is not killed for going async
+         after onReceive returns. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Auto-launch overlay exemption (AU2): the receiver holds
+         SYSTEM_ALERT_WINDOW so a background start is allowed on API 29-35.
+         xx-auto never draws an overlay; the permission is only the exemption. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Calls surface (AU8): requested only when surface_calls is switched on.
+         CALL_PHONE is deliberately NOT declared: the sheet dials via ACTION_CALL
+         and falls back to ACTION_DIAL (no permission) when the call is denied,
+         so the app never needs the permission (FavouritesSheet.dial).
+         POST_NOTIFICATIONS is deliberately NOT declared: the auto-launch trigger
+         (CarConnectReceiver) starts MainActivity directly and posts no
+         notification, so the fallback permission is unused. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+    <!-- Family theme-sync. xx-launcher defines and sendBroadcast()s with this
+         signature permission; uses-permission is required to receive it. -->
+    <uses-permission android:name="com.piercingxx.xxlauncher.permission.THEME_SYNC" />
+
+    <!-- Package visibility (targetSdk 35): the suite backup door reads this
+         app's own package info via PackageManager.getPackageInfo(packageName).
+         Declaring the package here keeps that lookup visible under
+         package-visibility filtering instead of throwing. -->
+    <queries>
+        <package android:name="${applicationId}" />
+    </queries>
+
+    <application
+        android:name=".XxAutoApp"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.XxAuto">
+
+        <!-- The drive screen. singleTask: exactly one instance; the auto-launch
+             receiver (AU2) reuses it rather than stacking a second. configChanges
+             left default — Compose handles rotation (AU9 follow_rotation). -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Suite backup door; contract: xx-apps/docs/SUITE-BACKUP-PROVIDER.md.
+             xx-apps declares com.piercingxx.suite.permission.BACKUP; this app
+             only references it. AutoBackupProvider is the concrete subclass and
+             the real door at ${applicationId}.suite.backup.
+
+             The vendored base SuiteBackupProvider is deliberately NOT declared
+             here: it is abstract, and Android instantiates every manifest
+             <provider> at process start before Application.onCreate — an
+             abstract class cannot be instantiated and would crash the app with
+             InstantiationException. Its own KDoc says "never a manifest
+             component": each suite app declares only its concrete subclass. -->
+        <provider
+            android:name=".backup.AutoBackupProvider"
+            android:authorities="${applicationId}.suite.backup"
+            android:exported="true"
+            android:permission="com.piercingxx.suite.permission.BACKUP" />
+
+        <!-- Suite log dump door; xx-apps reads this app's log ring buffer. -->
+        <provider
+            android:name=".log.LogDumpProvider"
+            android:authorities="${applicationId}.logs"
+            android:exported="true"
+            android:permission="com.piercingxx.apps.permission.READ_SUITE_LOGS" />
+
+        <!-- Launcher-only theme sync. The family launcher (xx-launcher) sends
+             THEME_CHANGED guarded by this signature permission; we receive it
+             and persist the synced ground through ThemeStore. -->
+        <receiver
+            android:name=".ui.theme.ThemeSyncReceiver"
+            android:exported="true"
+            android:permission="com.piercingxx.xxlauncher.permission.THEME_SYNC">
+            <intent-filter>
+                <action android:name="xx.launcher.THEME_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Auto-launch trigger (AU2): registered disabled by default; the
+             settings screen enables it only while the auto_launch toggle is on,
+             so it never wakes for a connection the user has not opted into. -->
+        <receiver
+            android:name=".trigger.CarConnectReceiver"
+            android:exported="true"
+            android:enabled="false">
+            <intent-filter>
+                <action android:name="android.bluetooth.device.action.ACL_CONNECTED" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>
