@@ -11,13 +11,27 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
+ * The one DataStore for the `settings` file (AU11). Top-level so every
+ * [AutoPrefs] instance shares a single active DataStore — DataStore throws if
+ * two instances are active for the same file, and DriveScreen / SettingsScreen
+ * each hold an [AutoPrefs] while both are in composition.
+ */
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = AutoPrefs.DATASTORE_NAME)
+
+/**
  * The single DataStore file for all of xx-auto's settings (AU11 — local-only,
  * backed up through the suite door). Reads and writes delegate to the pure
  * [SettingsMapper] so the prefs⇄[Settings] shape is testable without Android.
+ *
+ * The DataStore is a top-level singleton ([dataStore]) — not a member of this
+ * class — because `preferencesDataStore` creates one DataStore per file name
+ * and DataStore forbids two active instances for the same file. DriveScreen and
+ * SettingsScreen each construct their own [AutoPrefs]; if each built its own
+ * DataStore the second one would throw "multiple DataStores active for the same
+ * file" the moment both screens are in composition (the smoke run caught this
+ * as a FATAL EXCEPTION on the `⚙` → Settings transition).
  */
 class AutoPrefs(private val context: Context) {
-
-    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = DATASTORE_NAME)
 
     /** The current settings, live from the DataStore. */
     val settings: Flow<Settings> = context.dataStore.data.map { prefs ->

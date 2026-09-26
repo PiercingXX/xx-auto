@@ -305,9 +305,13 @@ fun DriveScreen(
         Text(
             text = "\u2699",
             color = ink.muted,
+            // The glyph normalises to no word, so the smoke walk (and screen
+            // readers) would never reach the Settings screen without a real
+            // label. Same pattern as the NothingPlaying text above.
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .clickable { showSettings = true }
+                .semantics { contentDescription = "Settings" }
                 .padding(24.dp),
         )
     }
@@ -368,9 +372,15 @@ private fun TileButton(
         DriveTiles.Tile.MAPS -> "Maps"
         DriveTiles.Tile.CALLS -> "Calls"
     }
+    // The bottom action tiles (Radio / Audiobook / Maps / Calls) do not open a
+    // separate screen — they fire an action on the drive surface. The smoke
+    // harness walker ignores nodes whose resource-id or content-desc carries
+    // the `action_` prefix so it does not tap them as navigation targets and
+    // report "walk did not move" when the screenshot stays the same.
     Column(
         modifier = Modifier
             .combinedClickable(onClick = onClick, onLongClick = onLongPress)
+            .semantics { contentDescription = "action_" + label.lowercase() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
