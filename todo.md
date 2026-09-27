@@ -98,7 +98,7 @@ covers it without Robolectric — the seam pattern every sibling uses
 
 ## Phase 6 — Polish and release
 
-- [ ] `AboutVersion`-style block in Settings (copy the sibling helper).
+- [x] `AboutVersion`-style block in Settings (copy the sibling helper).
 - [x] Log: `AppLog` ring buffer feeding `LogDumpProvider`, same shape as xx-camera.
 - [x] Backup: `AutoBackupProvider.contents()` = `prefs/`; `afterRestore()` re-applies the receiver enabled state from `auto_launch`.
 - [ ] Manual QA on the phone in the mount: radio playing → three thumbs visible and functional; audiobook (after Phase 7) resume; BT connect opens / disconnect closes only when auto-opened; rotation lock; keep-screen-on; light suite theme with `always_ink` off.
