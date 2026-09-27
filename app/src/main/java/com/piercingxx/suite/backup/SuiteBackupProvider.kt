@@ -21,11 +21,10 @@ import java.io.InputStream
 /**
  * The backup door every suite app exposes to xx-apps.
  *
- * Manifest (each app) — declare the app's CONCRETE subclass, never this base
- * class, which is abstract and cannot be a manifest component:
+ * Manifest (each app):
  *
  *     <provider
- *         android:name=".backup.AutoBackupProvider"
+ *         android:name=".backup.SuiteBackupProvider"
  *         android:authorities="${applicationId}.suite.backup"
  *         android:exported="true"
  *         android:permission="com.piercingxx.suite.permission.BACKUP" />
@@ -35,13 +34,8 @@ import java.io.InputStream
  *
  * Calls: `describe`, `snapshot`, `restore_begin`, `restore_commit`.
  * Subclasses override [contents], [applyExport], and [afterRestore].
- *
- * Abstract: this is a base class, never a manifest component. Each suite app
- * subclasses it (e.g. xx-auto's `AutoBackupProvider`) and declares THAT class
- * in its manifest at `${applicationId}.suite.backup`. Declaring the base class
- * itself would instantiate a provider with no app-specific [contents] override.
  */
-abstract class SuiteBackupProvider : ContentProvider() {
+open class SuiteBackupProvider : ContentProvider() {
 
     /** The catalog app name that becomes the `.xx-config/<app>/` directory. */
     open val appName: String get() = context!!.packageName.substringAfterLast('.')
@@ -60,7 +54,12 @@ abstract class SuiteBackupProvider : ContentProvider() {
     /** Runs after files are swapped in, before the process ends. */
     open fun afterRestore() {}
 
-    override fun onCreate(): Boolean = true
+    override fun onCreate(): Boolean {
+        // A restore the process died in must be finished or undone before
+        // anything reads prefs; providers start before Application.onCreate.
+        runCatching { snapshot.recoverInterruptedRestore() }
+        return true
+    }
 
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle {
         requireSuiteCaller()
@@ -94,6 +93,7 @@ abstract class SuiteBackupProvider : ContentProvider() {
     }
 
     private fun buildSnapshot(): Bundle {
+        sweepStale()
         val token = System.nanoTime().toString(36)
         val target = File(cacheDir(), "snapshot-$token.tar.gz")
         val meta = JSONObject()
@@ -113,6 +113,7 @@ abstract class SuiteBackupProvider : ContentProvider() {
     }
 
     private fun restoreBegin(): Bundle {
+        sweepStale()
         val token = System.nanoTime().toString(36)
         File(cacheDir(), "restore-$token.tar.gz").delete()
         return Bundle().apply { putString("uri", "content://${authority()}/restore/$token") }
@@ -122,9 +123,14 @@ abstract class SuiteBackupProvider : ContentProvider() {
         val staged = cacheDir().listFiles()?.filter { it.name.startsWith("restore-") }?.maxByOrNull { it.lastModified() }
             ?: return failure("nothing staged")
         return try {
-            val meta = snapshot.apply(staged) { name, body -> applyExport(name, body) }
-            val theirSchema = runCatching { JSONObject(meta).optInt("schema", 1) }.getOrDefault(1)
-            if (theirSchema > schema) return failure("schema")
+            // Refuse a newer schema before touching anything, not after.
+            val peek = snapshot.readMeta(staged).orEmpty()
+            val theirSchema = runCatching { JSONObject(peek).optInt("schema", 1) }.getOrDefault(1)
+            if (theirSchema > schema) {
+                staged.delete()
+                return failure("schema")
+            }
+            snapshot.apply(staged) { name, body -> applyExport(name, body) }
             afterRestore()
             staged.delete()
             // Let the reply reach xx-apps, then start clean on the restored files.
@@ -146,8 +152,9 @@ abstract class SuiteBackupProvider : ContentProvider() {
             "snapshot" -> {
                 val f = File(cacheDir(), "snapshot-$token.tar.gz")
                 require(f.isFile) { "no such snapshot" }
-                // Delete-on-close: the file goes away once xx-apps has read it.
-                ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY).also { f.deleteOnExit() }
+                // Unlink once open: the descriptor keeps the bytes readable for
+                // xx-apps, and nothing is left in the cache afterwards.
+                ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY).also { f.delete() }
             }
             "restore" -> {
                 val f = File(cacheDir(), "restore-$token.tar.gz")
@@ -172,6 +179,12 @@ abstract class SuiteBackupProvider : ContentProvider() {
         if (pm.checkSignatures(callerUid, Process.myUid()) != PackageManager.SIGNATURE_MATCH) {
             throw SecurityException("caller signature does not match")
         }
+    }
+
+    /** Drop snapshots / restores older than an hour that no one collected. */
+    private fun sweepStale() {
+        val cutoff = System.currentTimeMillis() - 60 * 60 * 1000L
+        cacheDir().listFiles()?.filter { it.lastModified() < cutoff }?.forEach { it.delete() }
     }
 
     private fun cacheDir(): File = File(context!!.cacheDir, "suite-backup").apply { mkdirs() }
