@@ -47,6 +47,22 @@ android {
         versionName = "0.1.0"
     }
 
+    // AU1/AU12: two product flavors. `noGms` (listed first, so it is the
+    // default) carries zero Google on the classpath and is what most installs
+    // get. `gms` is the opt-in flavor that adds the Android Auto templated
+    // media surface (src/gms). Both share one applicationId: they are the same
+    // app, and xx-apps lists both variants with noGms as the default.
+    flavorDimensions += "dist"
+    productFlavors {
+        create("noGms") {
+            dimension = "dist"
+            isDefault = true
+        }
+        create("gms") {
+            dimension = "dist"
+        }
+    }
+
     if (hasReleaseSigning) {
         signingConfigs {
             create("release") {
@@ -103,6 +119,7 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
 
     implementation(platform(libs.androidx.compose.bom))
@@ -119,7 +136,24 @@ dependencies {
     // One DataStore file for all settings (AU11).
     implementation(libs.androidx.datastore.preferences)
 
+    // AU12: the car-screen media surface. gms source set ONLY — the noGms
+    // build must never see androidx.car.app (scripts/check-nogms.sh).
+    "gmsImplementation"(libs.androidx.car.app)
+
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)
+}
+// The flavor split renames the unit-test tasks (testNoGmsDebugUnitTest,
+// testGmsDebugUnitTest). The GATE in todo.md, CI and the operator contracts all
+// run `testDebugUnitTest` (some with `--tests`), so keep that name as a real
+// Test task over the default noGms variant's tests, and make it compile the gms
+// car code too so a broken car surface fails the gate.
+tasks.register<Test>("testDebugUnitTest") {
+    group = "verification"
+    description = "Debug unit tests (noGms variant) + gms compile check."
+    val source = tasks.named<Test>("testNoGmsDebugUnitTest").get()
+    testClassesDirs = source.testClassesDirs
+    classpath = source.classpath
+    dependsOn(source.dependsOn, "compileNoGmsDebugUnitTestKotlin", "compileGmsDebugKotlin")
 }

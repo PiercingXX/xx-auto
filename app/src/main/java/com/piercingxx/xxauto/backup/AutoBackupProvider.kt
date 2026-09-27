@@ -2,6 +2,10 @@ package com.piercingxx.xxauto.backup
 
 import com.piercingxx.suite.backup.BackupContents
 import com.piercingxx.suite.backup.SuiteBackupProvider
+import com.piercingxx.xxauto.settings.AutoPrefs
+import com.piercingxx.xxauto.trigger.CarConnectReceiver
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import java.io.File
 
 /**
@@ -51,5 +55,18 @@ class AutoBackupProvider : SuiteBackupProvider() {
             files = emptyList(),
             exports = emptyMap(),
         )
+    }
+
+    /**
+     * A restore brings back `auto_launch` but not the receiver's enabled
+     * state (that lives in PackageManager, not in a file). Re-apply it from
+     * the restored settings so the trigger matches the toggle again.
+     */
+    override fun afterRestore() {
+        val context = context ?: return
+        val autoLaunch = runBlocking {
+            runCatching { AutoPrefs(context).settings.first().autoLaunch }.getOrDefault(false)
+        }
+        CarConnectReceiver.setEnabled(context, autoLaunch)
     }
 }

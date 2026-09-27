@@ -1,37 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- AU11: NO INTERNET. Nothing leaves the phone. -->
-    <!-- Auto-launch (AU2): pick a bonded Bluetooth device; the ACL_CONNECTED
-         receiver is enabled only when the auto_launch toggle is on. -->
+    <!-- AU11: NO INTERNET. Nothing leaves the phone. The merged release
+         manifest is audited against this list by scripts/check-permissions.sh. -->
+
+    <!-- Auto-launch (AU2): pick a bonded Bluetooth device and hear its ACL
+         connect / disconnect. API 31+ gates both behind BLUETOOTH_CONNECT
+         (runtime, asked when the toggle is switched on); API 26-30 gates them
+         behind the install-time BLUETOOTH permission. -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <!-- Auto-launch (AU2): the receiver holds a wake lock while it reads the
-         settings and launches, so the process is not killed for going async
-         after onReceive returns. -->
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <!-- Auto-launch overlay exemption (AU2): the receiver holds
-         SYSTEM_ALERT_WINDOW so a background start is allowed on API 29-35.
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+    <!-- Auto-launch overlay exemption (AU2): holding SYSTEM_ALERT_WINDOW lets
+         the receiver start the drive screen from the background on API 29-35.
          xx-auto never draws an overlay; the permission is only the exemption. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <!-- Calls surface (AU8): requested only when surface_calls is switched on.
-         CALL_PHONE is deliberately NOT declared: the sheet dials via ACTION_CALL
-         and falls back to ACTION_DIAL (no permission) when the call is denied,
-         so the app never needs the permission (FavouritesSheet.dial).
-         POST_NOTIFICATIONS is deliberately NOT declared: the auto-launch trigger
-         (CarConnectReceiver) starts MainActivity directly and posts no
-         notification, so the fallback permission is unused. -->
+    <!-- Auto-launch fallback (AU2): when the overlay grant is refused, the
+         receiver posts one "Car connected — open xx-auto" notification.
+         Requested only on that path, the first time. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Calls surface (AU8): asked only when surface_calls is switched on.
+         Denied CALL_PHONE falls back to ACTION_DIAL. -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <!-- media3-common adds ACCESS_NETWORK_STATE for ExoPlayer's network-type
+         detection. xx-auto is a MediaController with no player and no network
+         (AU4, AU11), so it is stripped from the merged manifest. -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        tools:node="remove" />
+    <!-- WAKE_LOCK is deliberately absent (design "Identity and build"):
+         keep-screen-on is a window flag, and the receiver uses goAsync(). -->
 
     <!-- Family theme-sync. xx-launcher defines and sendBroadcast()s with this
          signature permission; uses-permission is required to receive it. -->
     <uses-permission android:name="com.piercingxx.xxlauncher.permission.THEME_SYNC" />
 
-    <!-- Package visibility (targetSdk 35): the suite backup door reads this
-         app's own package info via PackageManager.getPackageInfo(packageName).
-         Declaring the package here keeps that lookup visible under
-         package-visibility filtering instead of throwing. -->
+    <!-- CALL_PHONE and BLUETOOTH would otherwise imply both features are
+         required; a phone without either still gets the drive screen. -->
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="false" />
+
+    <!-- Package visibility (targetSdk 35). Without these, getServiceInfo()
+         on the suite players throws NameNotFound and nothing ever connects,
+         and resolveActivity() never finds xx-maps. Named packages only (AU6:
+         found by component, not by scanning). -->
     <queries>
         <package android:name="${applicationId}" />
+        <!-- AU6 suite players -->
+        <package android:name="com.skpp.radio" />
+        <package android:name="com.piercingxx.audiobook" />
+        <!-- AU7 Maps tile, and the xx-apps listing for the not-installed state -->
+        <package android:name="com.piercingxx.maps" />
+        <package android:name="com.piercingxx.apps" />
     </queries>
 
     <application
@@ -91,15 +118,16 @@
             </intent-filter>
         </receiver>
 
-        <!-- Auto-launch trigger (AU2): registered disabled by default; the
-             settings screen enables it only while the auto_launch toggle is on,
-             so it never wakes for a connection the user has not opted into. -->
+        <!-- Auto-launch trigger (AU2): registered disabled; AutoPrefs enables it
+             only while the auto_launch toggle is on, so it never wakes for a
+             connection the user has not opted into. -->
         <receiver
             android:name=".trigger.CarConnectReceiver"
             android:exported="true"
             android:enabled="false">
             <intent-filter>
                 <action android:name="android.bluetooth.device.action.ACL_CONNECTED" />
+                <action android:name="android.bluetooth.device.action.ACL_DISCONNECTED" />
             </intent-filter>
         </receiver>
     </application>

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.piercingxx.xxauto.trigger.CarConnectReceiver
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -44,9 +45,11 @@ class AutoPrefs(private val context: Context) {
      * updates read the freshest value.
      */
     suspend fun update(transform: (Settings) -> Settings) {
+        var autoLaunch: Boolean? = null
         context.dataStore.edit { prefs ->
             val current = SettingsMapper.fromMap(prefs.toRawMap())
             val updated = transform(current)
+            if (updated.autoLaunch != current.autoLaunch) autoLaunch = updated.autoLaunch
             SettingsMapper.toMap(updated).forEach { (key, value) ->
                 when (value) {
                     is Boolean -> prefs[booleanPreferencesKey(key)] = value
@@ -60,6 +63,9 @@ class AutoPrefs(private val context: Context) {
                 }
             }
         }
+        // AU2: a write of auto_launch flips the manifest receiver with it, so
+        // off means nothing runs on a Bluetooth connect.
+        autoLaunch?.let { CarConnectReceiver.setEnabled(context, it) }
     }
 
     private fun Preferences.toRawMap(): Map<String, Any?> =

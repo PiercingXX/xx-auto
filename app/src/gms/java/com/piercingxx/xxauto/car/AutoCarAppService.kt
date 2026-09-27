@@ -11,10 +11,10 @@ import androidx.car.app.validation.HostValidator
  *
  * **Media category only.** The `gms` manifest declares this service with
  * `androidx.car.app.category.MEDIA`, and [CarSession] renders a templated media
- * surface — the active session's now-playing card, transport row and custom
- * buttons, plus a Maps handoff. It never declares `category.NAVIGATION`, never
- * uses `NAVIGATION_TEMPLATES`, never draws a map: navigation on the car screen
- * is xx-maps' (AU12, contracts/XX-MAPS.md Part 2).
+ * surface — the active session's now-playing, transport and custom buttons,
+ * the radio quick-pick, plus a Maps handoff. It never declares
+ * `category.NAVIGATION`, never uses `NAVIGATION_TEMPLATES`, never draws a map:
+ * navigation on the car screen is xx-maps' (AU12, contracts/XX-MAPS.md Part 2).
  */
 class AutoCarAppService : CarAppService() {
 
@@ -27,7 +27,7 @@ class AutoCarAppService : CarAppService() {
             // The car library ships the canonical Android Auto / Automotive OS
             // host allowlist; a release build must not trust every host.
             HostValidator.Builder(applicationContext)
-                .addAllowedHosts(androidx.car.app.R.array.hosts_allowlist_sample)
+                .addAllowedHosts(com.piercingxx.xxauto.R.array.car_hosts_allowlist)
                 .build()
         }
 }

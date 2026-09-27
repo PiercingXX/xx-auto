@@ -17,8 +17,11 @@ package: com.piercingxx.xxauto
 ```
 
 ```sh
-./gradlew :app:testDebugUnitTest
-./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest          # pure seams (noGms) + gms compile check
+./gradlew :app:assembleDebug              # both flavors
+./gradlew :app:assembleNoGmsRelease       # the default install
+./scripts/check-permissions.sh            # AU11/AU12 audit (after assembleRelease)
+./scripts/check-nogms.sh                  # noGms has no Google (classpath + dex)
 ```
 
-[design.md](design.md) · [todo.md](todo.md) · [contracts/XX-MAPS.md](contracts/XX-MAPS.md)
+[docs/MANUAL.md](docs/MANUAL.md) · [design.md](design.md) · [todo.md](todo.md) · [contracts/XX-MAPS.md](contracts/XX-MAPS.md)

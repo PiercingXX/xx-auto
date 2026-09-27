@@ -32,6 +32,12 @@ object NowPlayingState {
         val iconUri: String?,
         /** Whether the session reports the button enabled. */
         val isEnabled: Boolean,
+        /**
+         * The `CommandButton.icon` constant (e.g. `ICON_THUMB_UP_UNFILLED`), or
+         * `CommandButton.ICON_UNDEFINED` (0). Lets the card draw a known glyph
+         * when the owning package's [iconResId] cannot be loaded.
+         */
+        val icon: Int = 0,
     )
 
     /** Everything the now-playing card needs to draw itself. */
@@ -89,6 +95,7 @@ object NowPlayingState {
             iconResId = iconResId,
             iconUri = iconUri?.toString(),
             isEnabled = isEnabled,
+            icon = icon,
         )
     }
 }

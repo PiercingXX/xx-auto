@@ -70,10 +70,11 @@ jobs:
           cache: gradle
 
       # GitHub runners ship the Android SDK; no local.properties is written.
-      - name: Unit tests, release assembly, lint
+      - name: Unit tests, release assembly (both flavors), lint
         if: steps.phase.outputs.build == 'true'
         run: >
-          ./gradlew testDebugUnitTest :app:assembleRelease :app:lintDebug
+          ./gradlew :app:testDebugUnitTest :app:testGmsDebugUnitTest
+          :app:assembleRelease :app:lintNoGmsDebug :app:lintGmsDebug
           --console=plain
 
       - name: Audit merged-manifest permissions (AU11, AU12)

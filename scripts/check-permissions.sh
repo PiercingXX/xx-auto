@@ -33,8 +33,12 @@ if [ -z "${MERGED:-}" ]; then
 fi
 echo "check-permissions: auditing $MERGED"
 
-ACTUAL=$(grep -o '<uses-permission android:name="[^"]*"' "$MERGED" |
-         sed 's/<uses-permission android:name="//; s/"$//' | sort -u)
+# Flatten first: the merger writes an element with more than one attribute
+# (e.g. maxSdkVersion) across several lines, and a line-wise grep would miss
+# it — including a transitive INTERNET written that way.
+ACTUAL=$(tr '\n' ' ' <"$MERGED" | tr -s ' ' |
+         grep -oE '<uses-permission(-sdk-23)? android:name="[^"]*"' |
+         sed -E 's/<uses-permission(-sdk-23)? android:name="//; s/"$//' | sort -u)
 
 # ── FORBIDDEN: present = the design is a lie ─────────────────────────────
 # INTERNET is AU11 and the README. The location and notification-listener
@@ -59,16 +63,23 @@ fi
 echo "(none present)"
 
 # ── EXPECTED: the pinned set from design.md "Identity and build" ─────────
-# First real assembleRelease will likely add androidx.core's
-# DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION, as it did in xx-note. That is a
-# one-line deliberate edit, and the failure below is how you find out.
+# Deliberate additions beyond design.md's list, each with its reason:
+# - BLUETOOTH (maxSdkVersion 30): on API 26-30 the bonded-device list and the
+#   ACL_CONNECTED broadcast need it; BLUETOOTH_CONNECT only exists from 31.
+# - ${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION: androidx.core's
+#   own signature permission backing ContextCompat.registerReceiver(
+#   RECEIVER_NOT_EXPORTED) below API 33, as in xx-note. App-private.
+# media3-common's ACCESS_NETWORK_STATE is stripped in the manifest
+# (tools:node="remove"); it must not reappear here.
 echo "--- expected vs actual ---"
 EXPECTED=$(cat <<'PERMS'
+android.permission.BLUETOOTH
 android.permission.BLUETOOTH_CONNECT
 android.permission.CALL_PHONE
 android.permission.POST_NOTIFICATIONS
 android.permission.READ_CONTACTS
 android.permission.SYSTEM_ALERT_WINDOW
+com.piercingxx.xxauto.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 com.piercingxx.xxlauncher.permission.THEME_SYNC
 PERMS
 )
@@ -86,14 +97,28 @@ fi
 # "xx-maps owns the car screen for navigation; xx-auto owns it for media."
 # An app declaring the navigation category to draw someone else's map is how
 # you get two nav apps fighting for one screen.
+# The car service only exists in the gms flavor, so audit that manifest too —
+# checking noGms alone would pass vacuously.
 echo "--- AU12: car app category ---"
-if grep -q 'androidx.car.app.category.NAVIGATION' "$MERGED"; then
-    echo "check-permissions: xx-auto declares category.NAVIGATION — AU12 violation" >&2
-    echo "  Navigation on the car screen belongs to xx-maps. See contracts/XX-MAPS.md Part 2." >&2
+GMS_MERGED=$(find app/build/intermediates/merged_manifests -name AndroidManifest.xml -print 2>/dev/null |
+             grep -i 'gmsrelease' | grep -vi 'nogms' | head -1 || true)
+for m in "$MERGED" ${GMS_MERGED:+"$GMS_MERGED"}; do
+    if grep -q 'androidx.car.app.category.NAVIGATION' "$m"; then
+        echo "check-permissions: $m declares category.NAVIGATION — AU12 violation" >&2
+        echo "  Navigation on the car screen belongs to xx-maps. See contracts/XX-MAPS.md Part 2." >&2
+        exit 1
+    fi
+    if grep -q 'androidx.car.app.NAVIGATION_TEMPLATES' "$m"; then
+        echo "check-permissions: $m requests NAVIGATION_TEMPLATES — AU12 violation" >&2
+        exit 1
+    fi
+done
+if [ -z "${GMS_MERGED:-}" ]; then
+    echo "check-permissions: no gms merged manifest — build :app:assembleGmsRelease to audit the car surface." >&2
     exit 1
 fi
-if grep -q 'androidx.car.app.NAVIGATION_TEMPLATES' "$MERGED"; then
-    echo "check-permissions: xx-auto requests NAVIGATION_TEMPLATES — AU12 violation" >&2
+if grep -q 'androidx.car.app.CarAppService' "$MERGED"; then
+    echo "check-permissions: the noGms manifest declares a CarAppService — AU1/AU12 violation" >&2
     exit 1
 fi
-echo "(media only, as AU12 requires)"
+echo "(media only, as AU12 requires; noGms has no car service)"

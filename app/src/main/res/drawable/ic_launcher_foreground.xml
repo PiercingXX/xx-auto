@@ -2,7 +2,16 @@
 <!-- xx-auto mark: a steering wheel in the house glyph language (108 viewport,
      mark inside 34..74, Signal stroke 4, round caps, no fill). Circle r=20
      centred at 54,54; a horizontal spoke 34..74 through centre; a vertical
-     spoke 54,54 → 54,74; hub dot r=3 filled. -->
+     spoke 54,54 → 54,74; hub dot r=3 filled.
+
+     Checked 2026-09-27 against xx-clock (r16 ring, two short hands, hub dot)
+     and xx-note at 48dp, per design "Mark": they do not read alike. The
+     wheel's spokes run rim to rim and split the ring into a distinct ⊖-on-a-
+     stem, where the clock's hands float in one quadrant of a smaller ring;
+     xx-note is a page, not a ring. So the rim stays at the app-mark weight 4
+     (BRAND-GUIDE §5) and the spec is kept as drawn. The hub dot is invisible
+     at 48dp (it disappears into the spoke junction) and only shows at full
+     size, where it is harmless. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -10,23 +19,23 @@
     android:viewportHeight="108">
     <path
         android:pathData="M54,54 m-20,0 a20,20 0 1,1 40,0 a20,20 0 1,1 -40,0"
-        android:strokeColor="#FFFFFF"
+        android:strokeColor="@color/pxx_signal"
         android:strokeWidth="4"
         android:strokeLineCap="round"
         android:fillColor="#00000000"/>
     <path
         android:pathData="M34,54 L74,54"
-        android:strokeColor="#FFFFFF"
+        android:strokeColor="@color/pxx_signal"
         android:strokeWidth="4"
         android:strokeLineCap="round"
         android:fillColor="#00000000"/>
     <path
         android:pathData="M54,54 L54,74"
-        android:strokeColor="#FFFFFF"
+        android:strokeColor="@color/pxx_signal"
         android:strokeWidth="4"
         android:strokeLineCap="round"
         android:fillColor="#00000000"/>
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="@color/pxx_signal"
         android:pathData="M54,54 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"/>
 </vector>

@@ -1,6 +1,7 @@
 package com.piercingxx.xxauto.ui.theme
 
 import android.content.Context
+import android.content.SharedPreferences
 
 /**
  * The launcher theme-sync store (xx-camera's shape). The family launcher
@@ -35,6 +36,26 @@ class ThemeStore(context: Context) {
         themeName = theme.name
         backgroundArgb = theme.backgroundArgb
     }
+
+    /**
+     * Calls [onChange] with the new background whenever the launcher syncs a
+     * theme while the drive screen is up. Returns the unsubscribe call. The
+     * listener is held strongly here because SharedPreferences only keeps a
+     * weak reference to it.
+     */
+    fun observeBackground(onChange: (Int) -> Unit): () -> Unit {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_BACKGROUND) onChange(backgroundArgb)
+        }
+        listeners += listener
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        return {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+            listeners -= listener
+        }
+    }
+
+    private val listeners = mutableListOf<SharedPreferences.OnSharedPreferenceChangeListener>()
 
     companion object {
         /** Extra carrying the theme name on the THEME_CHANGED broadcast. */

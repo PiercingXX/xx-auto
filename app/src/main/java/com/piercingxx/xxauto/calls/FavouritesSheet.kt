@@ -1,17 +1,13 @@
 package com.piercingxx.xxauto.calls
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,6 +17,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.piercingxx.xxauto.ui.components.InkSheet
+import com.piercingxx.xxauto.ui.components.SheetRow
+import com.piercingxx.xxauto.ui.components.SheetStatus
 import com.piercingxx.xxauto.ui.theme.LocalInk
 
 /**
@@ -30,8 +29,11 @@ import com.piercingxx.xxauto.ui.theme.LocalInk
  * if `CALL_PHONE` is denied the sheet falls back to `ACTION_DIAL` and says so
  * once. Empty state: `No starred contacts` in `muted` — no instructions, no
  * link. The drive screen feeds [Favourites.starred] here on the Calls tile tap.
+ *
+ * The dialer fallback is a one-line note in Warn; a call that could not be
+ * placed at all (no dialer to hand it to) is the design's "failed call", in
+ * Error.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouritesSheet(
     contacts: List<Favourites.Contact>,
@@ -40,51 +42,41 @@ fun FavouritesSheet(
     val ink = LocalInk.current
     val context = LocalContext.current
     var dialFallback by remember { mutableStateOf(false) }
+    var callFailed by remember { mutableStateOf(false) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 24.dp),
-        ) {
+    InkSheet(title = "Favourites", onDismiss = onDismiss) {
+        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
             if (contacts.isEmpty()) {
-                Text(
-                    text = "No starred contacts",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = ink.muted,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 20.dp),
-                )
+                SheetStatus("No starred contacts")
             } else {
                 contacts.take(8).forEach { contact ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 72.dp)
-                            .clickable {
+                    SheetRow(
+                        title = contact.name,
+                        subtitle = contact.number,
+                        onClick = {
+                            callFailed = false
+                            try {
                                 dial(context, contact) { dialFallback = true }
+                            } catch (e: ActivityNotFoundException) {
+                                callFailed = true
                             }
-                            .padding(horizontal = 24.dp, vertical = 12.dp),
-                    ) {
-                        Text(
-                            text = contact.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = ink.text,
-                        )
-                        Text(
-                            text = contact.number,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = ink.muted,
-                        )
-                    }
+                        },
+                    )
                 }
             }
             if (dialFallback) {
                 Text(
                     text = "Call permission denied — dialing instead",
                     style = MaterialTheme.typography.bodySmall,
-                    color = ink.muted,
+                    color = ink.warnText,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                )
+            }
+            if (callFailed) {
+                Text(
+                    text = "Couldn't place the call — no phone app",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ink.errorText,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
                 )
             }

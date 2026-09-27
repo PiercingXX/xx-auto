@@ -5,6 +5,10 @@
     <!-- Drive screen -->
     <string name="nothing_playing">Nothing playing</string>
 
+    <!-- Auto-launch fallback notification (AU2) -->
+    <string name="car_channel_name">Car connected</string>
+    <string name="car_connected_title">Car connected — open xx-auto</string>
+
     <!-- Product register (shown in Settings) -->
     <string name="local_only_statement">Free and ad-free. Collects no personal data. Nothing here leaves your device.</string>
 </resources>

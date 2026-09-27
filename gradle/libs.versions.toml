@@ -8,10 +8,12 @@ composeBom = "2024.09.03"
 media3 = "1.8.1"
 datastore = "1.1.1"
 junit = "4.13.2"
+carApp = "1.7.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 
 # Compose (versions supplied by the BOM).
@@ -30,6 +32,11 @@ androidx-media3-session = { group = "androidx.media3", name = "media3-session", 
 
 # One DataStore file for all settings (AU11 — local-only, backed up through the suite door).
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+
+# Android Auto templated surface — `gms` flavor ONLY (AU12). Same pin as
+# xx-maps. Never add this to a plain `implementation`: scripts/check-nogms.sh
+# fails the build if it resolves into noGmsReleaseRuntimeClasspath.
+androidx-car-app = { group = "androidx.car.app", name = "app", version.ref = "carApp" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 

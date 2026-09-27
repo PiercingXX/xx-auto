@@ -107,3 +107,55 @@ class CustomButtonLayoutTest {
         assertEquals(androidx.media3.common.Player.COMMAND_PLAY_PAUSE, button.playerCommand)
     }
 }
+class CustomButtonTransportDedupeTest {
+
+    private fun button(action: String?, command: Int) = NowPlayingState.CustomButton(
+        commandAction = action,
+        playerCommand = command,
+        displayName = action ?: "cmd$command",
+        iconResId = 0,
+        iconUri = null,
+        isEnabled = true,
+    )
+
+    private fun model(buttons: List<NowPlayingState.CustomButton>) = NowPlayingState.Model(
+        title = null, subtitle = null, artworkUri = null, positionMs = 0, durationMs = 0,
+        isPlaying = false, isSeekable = false, hasPrev = false, hasNext = false,
+        customButtons = buttons,
+    )
+
+    @Test
+    fun `excludeTransport drops player commands the transport row already draws`() {
+        val transport = listOf(
+            androidx.media3.common.Player.COMMAND_PLAY_PAUSE,
+            androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS,
+            androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
+            androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT,
+            androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM,
+        ).map { button(null, it) }
+        val thumbs = listOf("THUMB_UP", "THUMB_REST", "THUMB_DOWN").map { button(it, -1) }
+        val row = CustomButtons.layout(model(transport + thumbs), excludeTransport = true)
+        assertEquals(listOf("THUMB_UP", "THUMB_REST", "THUMB_DOWN"), row.buttons.map { it.commandAction })
+    }
+
+    @Test
+    fun `other player commands survive the dedupe`() {
+        val stop = button(null, androidx.media3.common.Player.COMMAND_STOP)
+        assertEquals(1, CustomButtons.layout(model(listOf(stop)), excludeTransport = true).buttons.size)
+    }
+
+    @Test
+    fun `without the flag the session's list is untouched`() {
+        val play = button(null, androidx.media3.common.Player.COMMAND_PLAY_PAUSE)
+        assertEquals(1, CustomButtons.layout(model(listOf(play))).buttons.size)
+    }
+
+    @Test
+    fun `icon data rides through to the row`() {
+        val withIcon = button("THUMB_UP", -1).copy(iconResId = 42, iconUri = "content://x", icon = 7)
+        val b = CustomButtons.layout(model(listOf(withIcon))).buttons.single()
+        assertEquals(42, b.iconResId)
+        assertEquals("content://x", b.iconUri)
+        assertEquals(7, b.icon)
+    }
+}

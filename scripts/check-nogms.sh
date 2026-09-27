@@ -61,6 +61,46 @@ if [ "$bad" -eq 1 ]; then
 fi
 echo "(no Google artifacts in the noGms classpath)"
 
+# ── Second net: what actually shipped in the noGms APK ────────────────────
+# A dependency tree can be fooled (a fat jar, a vendored class); the dex
+# cannot. Guava (com.google.common.*) is allowed: media3 requires it, and it
+# is a plain library, not Google services.
+APK=$(find app/build/outputs/apk -path '*noGms*' -name '*release*.apk' -print 2>/dev/null | head -1 || true)
+if [ -z "${APK:-}" ]; then
+    echo "check-nogms: no noGms release APK — run ./gradlew :app:assembleNoGmsRelease first." >&2
+    exit 1
+fi
+SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+if [ -z "$SDK" ] && [ -f local.properties ]; then
+    SDK=$(sed -n 's/^sdk.dir=//p' local.properties)
+fi
+DEXDUMP=$(ls -1 "$SDK"/build-tools/*/dexdump 2>/dev/null | sort -V | tail -1 || true)
+if [ -z "${DEXDUMP:-}" ]; then
+    echo "check-nogms: dexdump not found under \$ANDROID_HOME/build-tools" >&2
+    exit 1
+fi
+echo "check-nogms: dexdump over $APK"
+WORK=$(mktemp -d); trap 'rm -rf "$WORK" "$DEPS"' EXIT
+unzip -q -o "$APK" 'classes*.dex' -d "$WORK"
+DEX_DENY='Landroidx/car/app/
+Lcom/google/android/
+Lcom/google/firebase/
+Lcom/google/mlkit/'
+CLASSES=$(for d in "$WORK"/classes*.dex; do "$DEXDUMP" "$d" | grep -oE "Class descriptor *: *'L[^;]*;" ; done |
+          sed -E "s/.*'(L[^;]*;)/\1/" | sort -u)
+while IFS= read -r pat; do
+    if HIT=$(printf '%s\n' "$CLASSES" | grep -F "$pat" | head -5); [ -n "$HIT" ]; then
+        echo "check-nogms: noGms APK ships $pat classes:" >&2
+        printf '  %s\n' $HIT >&2
+        bad=1
+    fi
+done <<<"$DEX_DENY"
+if [ "$bad" -eq 1 ]; then
+    echo "  The noGms APK must carry no androidx.car.app and no Google services (AU1/AU12)." >&2
+    exit 1
+fi
+echo "(no Google classes in the noGms APK — $(printf '%s\n' "$CLASSES" | wc -l) classes checked)"
+
 # TODO(phase 9): once the dependency set settles, promote this to a pinned
 # allowlist in the shape of xx-note/scripts/check-deps.sh. A denylist catches
 # what we thought to name; an allowlist catches what we did not.

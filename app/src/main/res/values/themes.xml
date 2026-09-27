@@ -1,13 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Phase 0: a single Ink, no-action-bar theme. The drive screen renders
-         its own Ink ground (design: "Big targets. Black ground. Nothing
-         else."); the theme just pins the window to Ink with no chrome. -->
+    <!-- A single Ink, no-action-bar theme. The drive screen renders its own
+         ground (design: "Big targets. Black ground. Nothing else."); the
+         theme pins the window and the splash to Ink with no chrome. The bars
+         are transparent and edge-to-edge (MainActivity enableEdgeToEdge); at
+         runtime XxAutoTheme flips their icons dark on a light suite ground,
+         so the starting values here are the Ink ones. -->
     <style name="Theme.XxAuto" parent="android:Theme.Material.NoActionBar" tools:targetApi="31">
         <item name="android:windowBackground">@color/pxx_ink</item>
+        <item name="android:colorBackground">@color/pxx_ink</item>
+        <item name="android:colorAccent">@color/pxx_signal</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@color/pxx_ink</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:enforceStatusBarContrast">false</item>
         <item name="android:forceDarkAllowed">false</item>
+        <item name="android:windowSplashScreenBackground">@color/pxx_ink</item>
     </style>
 </resources>

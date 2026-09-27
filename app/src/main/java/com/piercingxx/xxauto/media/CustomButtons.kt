@@ -28,6 +28,12 @@ object CustomButtons {
          * row should draw it; false when the row must fall back to [label].
          */
         val renderAsIcon: Boolean,
+        /** The session's `CommandButton.icon` constant, 0 when undefined. */
+        val icon: Int = 0,
+        /** Drawable id inside the owning package (load via `createPackageContext`). */
+        val iconResId: Int = 0,
+        /** Icon URI the session shipped, or null. */
+        val iconUri: String? = null,
     )
 
     /** The row: the session's custom buttons in the order it gave them. */
@@ -40,8 +46,22 @@ object CustomButtons {
      * keeps its session order; [Button.renderAsIcon] is true when the session
      * shipped an icon and false when the row must fall back to the display name.
      */
-    fun layout(model: NowPlayingState.Model): Row =
-        Row(model.customButtons.map { it.toButton() })
+    fun layout(model: NowPlayingState.Model, excludeTransport: Boolean = false): Row =
+        Row(
+            model.customButtons
+                .filterNot { excludeTransport && it.commandAction == null && it.playerCommand in TRANSPORT }
+                .map { it.toButton() },
+        )
+
+    /**
+     * Player commands the card's own transport row already draws
+     * (`⏮ ▶︎/⏸ ⏭`). A session that also lists them in its button preferences
+     * would otherwise get each one twice; the drive screen passes
+     * `excludeTransport = true`. Values are media3's `Player.COMMAND_*` codes
+     * (PLAY_PAUSE 1, SEEK_TO_PREVIOUS_MEDIA_ITEM 6, SEEK_TO_PREVIOUS 7,
+     * SEEK_TO_NEXT_MEDIA_ITEM 8, SEEK_TO_NEXT 9), inlined so this stays pure.
+     */
+    private val TRANSPORT = setOf(1, 6, 7, 8, 9)
 
     private fun NowPlayingState.CustomButton.toButton(): Button = Button(
         commandAction = commandAction,
@@ -49,5 +69,8 @@ object CustomButtons {
         label = displayName,
         isEnabled = isEnabled,
         renderAsIcon = iconResId != 0 || iconUri != null,
+        icon = icon,
+        iconResId = iconResId,
+        iconUri = iconUri,
     )
 }
