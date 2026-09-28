@@ -203,7 +203,8 @@ get two nav apps fighting for the same screen.
 
 ## Emulator smoke (millable)
 
-- [x] SMOKE-1 — Fix the crash: FATAL EXCEPTION in com.piercingxx.xxauto — read logcat.txt under the run's .skippy/smoke/ directory for the stack
+- [ ] SMOKE-1 — the app fails its emulator smoke run
+  - reason: build succeeded but produced no APK under app/build/outputs/apk/debug
   - verify: python3 /home/piercingxx/.skippy/app/scripts/android_smoke.py . 2>&1 | tail -1 | grep -q 'SMOKE PASS'
-- [x] SMOKE — the app passes its emulator smoke run
+- [ ] SMOKE — the app passes its emulator smoke run
   - verify: python3 /home/piercingxx/.skippy/app/scripts/android_smoke.py . 2>&1 | tail -1 | grep -q 'SMOKE PASS'
