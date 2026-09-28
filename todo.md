@@ -132,19 +132,19 @@ covers it without Robolectric — the seam pattern every sibling uses
 
 Repo: `Phone-Projects/android/xx-audiobook/produced/xx-audiobook-app` (never the parked `xx-audiobook-app` checkout — see its `MOVED.md`). Its own `todo.md` gets these rows; this list is the brief.
 
-- [ ] `playback/AudiobookPlaybackService.kt : MediaSessionService`, `foregroundServiceType="mediaPlayback"`, exported, intent-filter `androidx.media3.session.MediaSessionService`. Owns the ExoPlayer that today lives with `MainActivity` / `PhoneListen` — move it, don't duplicate it.
-- [ ] Session metadata per item: `title` = book, `subtitle`/`artist` = chapter, `artworkUri` = cover, `durationMs`. `COMMAND_SEEK_TO_NEXT/PREVIOUS` map to chapter skip.
-- [ ] Activity binds through a `MediaController` to the same session so the in-app player and xx-auto see one state.
-- [ ] Bump `media3` 1.4.1 → 1.8.1 to match radio and xx-auto; fix any API moves.
-- [ ] Zone-cast (`PhoneListen.Destination.ZONE`) stays outside the session: when casting, the session has no item, so xx-auto's tile deep-links. Document that.
-- [ ] Keep `NoPlay` green: media3-session is standalone androidx, no GMS.
+- [x] `playback/AudiobookPlaybackService.kt : MediaSessionService`, `foregroundServiceType="mediaPlayback"`, exported, intent-filter `androidx.media3.session.MediaSessionService`. Owns the ExoPlayer that today lives with `MainActivity` / `PhoneListen` — move it, don't duplicate it.
+- [x] Session metadata per item: `title` = book, `subtitle`/`artist` = chapter, `artworkUri` = cover, `durationMs`. `COMMAND_SEEK_TO_NEXT/PREVIOUS` map to chapter skip.
+- [x] Activity binds through a `MediaController` to the same session so the in-app player and xx-auto see one state.
+- [x] Bump `media3` 1.4.1 → 1.8.1 to match radio and xx-auto; fix any API moves.
+- [x] Zone-cast (`PhoneListen.Destination.ZONE`) stays outside the session: when casting, the session has no item, so xx-auto's tile deep-links. Document that.
+- [x] Keep `NoPlay` green: media3-session is standalone androidx, no GMS.
 
 ## Phase 8 — Sibling: registration
 
-- [ ] `xx-apps` `CatalogSeed.rows` += `Row("com.piercingxx.xxauto", "xx-auto", "piercingxx/xx-auto")`; `CatalogListings.all` += tagline `A driving screen for a phone in a mount.`, description from README, `iconRes = R.drawable.icon_xx_auto` (copy the mark). Default **on** in `todo.md` A7 table (local, no server).
-- [ ] `xx-apps` `SuiteThemeClient` fan-out list += `com.piercingxx.xxauto`.
-- [ ] `xx-launcher` `ThemeBroadcaster.FAMILY_PACKAGES` += `com.piercingxx.xxauto`; its `ThemeBroadcasterTest` if it asserts the list.
-- [ ] Both repos: explicit-path commits, no trailers, GitHub then Gitea.
+- [x] `xx-apps` `CatalogSeed.rows` += `Row("com.piercingxx.xxauto", "xx-auto", "piercingxx/xx-auto")`; `CatalogListings.all` += tagline `A driving screen for a phone in a mount.`, description from README, `iconRes = R.drawable.icon_xx_auto` (copy the mark). Default **on** in `todo.md` A7 table (local, no server).
+- [x] `xx-apps` `SuiteThemeClient` fan-out list += `com.piercingxx.xxauto`.
+- [x] `xx-launcher` `ThemeBroadcaster.FAMILY_PACKAGES` += `com.piercingxx.xxauto`; its `ThemeBroadcasterTest` if it asserts the list.
+- [x] Both repos: explicit-path commits, no trailers, GitHub then Gitea.
 
 ## Phase 9 — Car screen (AU12–AU14, `gms` flavor only)
 
@@ -181,7 +181,7 @@ phase above it ships without it.
       Version* and allow unknown sources, because neither app is on the Play
       Store. This belongs in the manual, not in a commit message.
   - evidence: 2026-09-27 completeness pass: docs/MANUAL.md.
-- [ ] `xx-apps`: xx-auto listed with both variants, `noGms` default.
+- [x] `xx-apps`: xx-auto listed with both variants, `noGms` default.
 - [x] External display (AU13): `DisplayManager` + `Presentation` rendering the
       drive screen on a DP-alt/HDMI head unit. **This one is not `gms`-gated**
       — it is plain Android and works on a bare GrapheneOS install. Pure
