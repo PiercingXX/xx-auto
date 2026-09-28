@@ -149,6 +149,26 @@ dependencies {
 // run `testDebugUnitTest` (some with `--tests`), so keep that name as a real
 // Test task over the default noGms variant's tests, and make it compile the gms
 // car code too so a broken car surface fails the gate.
+// The emulator smoke gate (scripts/android_smoke.py) builds `:app:assembleDebug`
+// and looks for the APK at app/build/outputs/apk/debug/. Product flavors relocate
+// the output to app/build/outputs/apk/<flavor>/debug/, so the build would succeed
+// yet the gate would find nothing and report "produced no APK". Copy the default
+// (noGms) debug APK to the un-flavored path the gate expects, wired into
+// assembleDebug so a smoke run always finds it.
+val copyNoGmsDebugApkToSmokePath by tasks.registering(Copy::class) {
+    dependsOn("assembleNoGmsDebug")
+    from(layout.buildDirectory.dir("outputs/apk/noGms/debug"))
+    include("*.apk")
+    into(layout.buildDirectory.dir("outputs/apk/debug"))
+}
+// assembleDebug is created by AGP after the android block configures, so hook
+// the copy into it only once the task graph is being finalised.
+afterEvaluate {
+    tasks.named("assembleDebug").configure {
+        dependsOn(copyNoGmsDebugApkToSmokePath)
+    }
+}
+
 tasks.register<Test>("testDebugUnitTest") {
     group = "verification"
     description = "Debug unit tests (noGms variant) + gms compile check."

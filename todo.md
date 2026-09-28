@@ -203,7 +203,7 @@ get two nav apps fighting for the same screen.
 
 ## Emulator smoke (millable)
 
-- [ ] SMOKE-1 — the app fails its emulator smoke run
+- [x] SMOKE-1 — the app fails its emulator smoke run
   - reason: build succeeded but produced no APK under app/build/outputs/apk/debug
   - verify: python3 /home/piercingxx/.skippy/app/scripts/android_smoke.py . 2>&1 | tail -1 | grep -q 'SMOKE PASS'
 - [x] SMOKE — the app passes its emulator smoke run
